@@ -1,7 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
 
-from yfinance import Ticker
+import yfinance as yf
 
 # Create your models here.
 
@@ -23,41 +24,84 @@ class User(models.Model):
 
 
 class Industry(models.Model):
-    industry = models.CharField(max_length=100)
+    industry_name = models.CharField(max_length=100, unique=True)
 
     class Meta:
         verbose_name = "Indústria"
         verbose_name_plural = "Indústrias"
 
     def __str__(self):
-        return self.industry
+        return self.industry_name
 
     def get_absolute_url(self):
         return reverse("Industry_detail", kwargs={"pk": self.pk})
 
 
 class Sector(models.Model):
-    sector = models.CharField(max_length=100)
+    sector_name = models.CharField(max_length=100, unique=True)
 
     class Meta:
         verbose_name = "Setor"
         verbose_name_plural = "Setores"
 
     def __str__(self):
-        return self.sector
+        return self.sector_name
 
     def get_absolute_url(self):
         return reverse("Sector_detail", kwargs={"pk": self.pk})
 
 
 class Stock(models.Model):
-    ticker = models.CharField(max_length=4, null=False, unique=True, db_index=True)
+    ticker = models.CharField(max_length=10, unique=True)
     company_name = models.CharField(max_length=100, blank=True)
+    current_price = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
+    market_cap = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
+    volume = models.BigIntegerField(blank=True, null=True)
+    dividend_yield = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True
+    )
+    last_updated = models.DateTimeField(auto_now=True)
+    sector = models.ForeignKey(Sector, on_delete=models.SET_NULL, null=True, blank=True)
+    industry = models.ForeignKey(
+        Industry, on_delete=models.SET_NULL, null=True, blank=True
+    )
 
     def save(self, *args, **kwargs):
-        ticker_data = Ticker(self.ticker)
+        self.ticker = self.ticker.upper()
+
+        if Stock.objects.filter(ticker=self.ticker).exists():
+            return
+
+        ticker_data = yf.Ticker(self.ticker)
         info = ticker_data.info
-        self.company_name = info.get("shortName")
+
+        if not info or "shortName" not in info:
+            return
+
+        self.company_name = info.get("shortName", "")
+        self.current_price = info.get("currentPrice", 0)
+        self.market_cap = info.get("marketCap", 0)
+        self.volume = info.get("volume", 0)
+        self.dividend_yield = (
+            info.get("dividendYield", 0) * 100 if info.get("dividendYield") else 0
+        )
+
+        sector_name = info.get("sector", "Unknown")
+        if sector_name:
+            sector, created = Sector.objects.get_or_create(sector_name=sector_name)
+            self.sector = sector
+
+        industry_name = info.get("industry", "Unknown")
+        if industry_name:
+            industry, created = Industry.objects.get_or_create(
+                industry_name=industry_name
+            )
+            self.industry = industry
+
         super().save(*args, **kwargs)
 
     class Meta:
@@ -65,7 +109,7 @@ class Stock(models.Model):
         verbose_name_plural = "Ativos"
 
     def __str__(self):
-        return self.ticker
+        return f"{self.company_name} ({self.ticker})"
 
     def get_absolute_url(self):
         return reverse("Stock_detail", kwargs={"pk": self.pk})
@@ -117,7 +161,7 @@ class Sell(models.Model):
         verbose_name_plural = "Vendas"
 
     def __str__(self):
-        return self.ticker
+        return self.ticker.ticker
 
     def get_absolute_url(self):
         return reverse("Sell_detail", kwargs={"pk": self.pk})
