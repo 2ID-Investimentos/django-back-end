@@ -153,8 +153,8 @@ class Sell(models.Model):
             MinValueValidator(1),
         ],
     )
-    unitary_value = models.DecimalField(max_digits=3, decimal_places=2, null=False)
-    total_value = models.DecimalField(max_digits=9, decimal_places=2, null=False)
+    unitary_value = models.DecimalField(max_digits=5, decimal_places=2, null=False)
+    total_value = models.DecimalField(max_digits=11, decimal_places=2, null=False)
 
     class Meta:
         verbose_name = "Venda"
