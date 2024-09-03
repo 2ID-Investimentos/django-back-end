@@ -1,26 +1,11 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
 
 import yfinance as yf
 
 # Create your models here.
-
-
-class User(models.Model):
-    username = models.CharField(max_length=50, null=False, unique=True, db_index=True)
-    password = models.CharField(max_length=50, null=False, unique=True)
-    email = models.EmailField(max_length=254)
-
-    class Meta:
-        verbose_name = "Usuário"
-        verbose_name_plural = "Usuários"
-
-    def __str__(self):
-        return self.username
-
-    def get_absolute_url(self):
-        return reverse("User_detail", kwargs={"pk": self.pk})
 
 
 class Industry(models.Model):
@@ -117,7 +102,7 @@ class Stock(models.Model):
 
 class Buy(models.Model):
     user = models.ForeignKey(
-        "User", on_delete=models.CASCADE, null=False, db_index=True, default=1
+        get_user_model(), on_delete=models.CASCADE, null=False, db_index=True, default=1
     )
     ticker = models.ForeignKey("Stock", on_delete=models.CASCADE, db_index=True)
     date = models.DateField(auto_now=False, auto_now_add=False, null=False)
@@ -143,7 +128,7 @@ class Buy(models.Model):
 
 class Sell(models.Model):
     user = models.ForeignKey(
-        "User", on_delete=models.CASCADE, null=False, db_index=True, default=1
+        get_user_model(), on_delete=models.CASCADE, null=False, db_index=True, default=1
     )
     ticker = models.ForeignKey("Stock", on_delete=models.CASCADE, db_index=True)
     date = models.DateField(auto_now=False, auto_now_add=False, null=False)
