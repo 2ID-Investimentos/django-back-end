@@ -1,5 +1,4 @@
-__pycache__
 .venv
-database/__pycache__
-project/__pycache__
-db.sqlite3
+**/__pycache__
+request_login.json
+request_register.json
