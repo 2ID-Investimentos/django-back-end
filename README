@@ -1,0 +1,17 @@
+Pra rodar o servidor Django:
+
+    No terminal instale os pacotes python
+
+        $ sudo apt-get install venv
+        $ sudo apt-get install pip
+
+    No diretório do projeto rode os seguintes comandos
+
+        python3 -m venv .venv
+        source .venv/bin/install
+        pip install Django djangorestframework
+
+    Faça as migrações e rode o servidor
+
+        python3 manage.py migrate
+        python3 manage.py runserver
